@@ -24,24 +24,19 @@ def niftireslice(fixed_nii_path: str, moving_nii_path: str, moving_resliced_nii_
 
 
 if __name__ == "__main__":
-    data_folder = 'C:/Users/benysar/Desktop/Github/stroke-occlusion/data/envoi-20231207'  # Path to the main data directory
+    swi_folder_path = 'E:/data/SWI/transformed_images'
+    tof3d_folder_path = 'E:/data/TOF3D/transformed_images'
+    tof3d_resliced_folder_path = 'E:/data/TOF3D/transformed_images_resliced'
 
-    for patient_folder in os.listdir(data_folder):
-        patient_folder_path = os.path.join(data_folder, patient_folder)
-        
-        if os.path.isdir(patient_folder_path):
-            swi_folder_path = os.path.join(patient_folder_path, 'SWI')
-            swi_files = [f for f in os.listdir(swi_folder_path) if f.endswith('.nii.gz')]
-            
-            if swi_files:
-                swi_path = os.path.join(swi_folder_path, swi_files[0])  # Assuming only one SWI file in the folder
-            
-                tof3d_folder_path = os.path.join(patient_folder_path, 'TOF3D')
-                tof3d_files = [f for f in os.listdir(tof3d_folder_path) if f.endswith('.nii.gz')]
-                
-                if tof3d_files:
-                    tof3d_path = os.path.join(tof3d_folder_path, tof3d_files[0])  # Assuming only one TOF3D file in the folder
-                
-                    resliced_path = os.path.join(patient_folder_path, 'TOF3D', f'{patient_folder}_resliced.nii.gz')
-                    
-                    niftireslice(fixed_nii_path=swi_path, moving_nii_path=tof3d_path, moving_resliced_nii_path=resliced_path)
+    if not os.path.exists(tof3d_resliced_folder_path):
+        os.makedirs(tof3d_resliced_folder_path)
+
+    swi_files = [f for f in os.listdir(swi_folder_path) if f.endswith('.nii.gz')]
+    tof3d_files = [f for f in os.listdir(tof3d_folder_path) if f.endswith('.nii.gz')]
+
+    for swi_file, tof3d_file in zip(swi_files, tof3d_files):
+        swi_path = os.path.join(swi_folder_path, swi_file)
+        tof3d_path = os.path.join(tof3d_folder_path, tof3d_file)
+        resliced_path = os.path.join(tof3d_resliced_folder_path, f'{tof3d_file}_resliced.nii.gz')
+
+        niftireslice(fixed_nii_path=swi_path, moving_nii_path=tof3d_path, moving_resliced_nii_path=resliced_path)
