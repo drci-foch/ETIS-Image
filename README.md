@@ -1,4 +1,4 @@
-# 🏥 RHU BOOSTER Stroke Research Program
+# 🏥 RHU BOOSTER Stroke Research Program : ETIS-Image
 
 ## 🧠 About Stroke
 Stroke remains the leading cause of disability and the second leading cause of death in France (and the leading cause of death in European women).
