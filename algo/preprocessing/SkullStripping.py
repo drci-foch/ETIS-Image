@@ -17,6 +17,13 @@ def Stroke_closing(img):
     new_img = scipy.ndimage.binary_closing(img, structure=np.ones((2,2,2)))
     return new_img
 
+def z_score_normalize(array):
+    # Z_score normalizing with error handling
+    if np.std(array) != 0.0:
+        return (array-np.mean(array))/np.std(array)
+    else:
+        return array
+
 def get_SkullStripped_Mask(model, SWI_img, TOF_img):
     # To inference brain mask from MaskNet model
     # model specifies which pre-trained DL model is used to inference
@@ -29,8 +36,8 @@ def get_SkullStripped_Mask(model, SWI_img, TOF_img):
     # swi_background_value = -np.mean(swi)/np.std(swi)
     # tof_background_value = -np.mean(tof)/np.std(tof)
     
-    # swi  = (swi-np.mean(swi))/np.std(swi)
-    # tof  = (tof-np.mean(tof))/np.std(tof)
+    swi  = z_score_normalize(swi)
+    tof  = z_score_normalize(tof)
 
     # swi[swi == swi_background_value] = 0
     # tof[tof == tof_background_value] = 0
