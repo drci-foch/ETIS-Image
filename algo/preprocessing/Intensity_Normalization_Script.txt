@@ -1,0 +1,7 @@
+ Get-ChildItem -Recurse -File -Filter *.nii* -Path D:\data_processed_ETIS\Resized_Images\TOF3D | ForEach-Object {
+     $oldFilename = $_.FullName
+     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
+     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($baseName)
+     $extension = ".nii.gz"
+     $newFilename = [System.IO.Path]::Combine("D:\data_processed_ETIS\Intensity_Normalized_Images\TOF3D", "$baseName`_Normalized$extension")
+     zscore-normalize $oldFilename -o $newFilename -v -mo other}
