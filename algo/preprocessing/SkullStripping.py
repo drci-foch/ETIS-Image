@@ -17,8 +17,12 @@ def Stroke_closing(img):
     new_img = scipy.ndimage.binary_closing(img, structure=np.ones((2,2,2)))
     return new_img
 
-def z_score_normalize(array):
-    # Z_score normalizing with error handling
+def z_score_normalize_saturate_outliers(array, quantile_of_max=1.0):
+    # Z_score normalizing with error handling and binning of outliers at the max of the
+    # specified quantile.
+    saturation_value = np.quantile(array, quantile_of_max)
+    array[array >= saturation_value] = saturation_value
+    
     if np.std(array) != 0.0:
         return (array-np.mean(array))/np.std(array)
     else:
@@ -36,8 +40,8 @@ def get_SkullStripped_Mask(model, SWI_img, TOF_img):
     # swi_background_value = -np.mean(swi)/np.std(swi)
     # tof_background_value = -np.mean(tof)/np.std(tof)
     
-    swi  = z_score_normalize(swi)
-    tof  = z_score_normalize(tof)
+    swi  = z_score_normalize_saturate_outliers(swi, quantile_of_max=0.999)
+    tof  = z_score_normalize_saturate_outliers(tof, quantile_of_max=0.999)
 
     # swi[swi == swi_background_value] = 0
     # tof[tof == tof_background_value] = 0
