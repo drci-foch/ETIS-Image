@@ -40,8 +40,8 @@ def get_SkullStripped_Mask(model, SWI_img, TOF_img):
     # swi_background_value = -np.mean(swi)/np.std(swi)
     # tof_background_value = -np.mean(tof)/np.std(tof)
     
-    swi  = z_score_normalize_saturate_outliers(swi, quantile_of_max=0.999)
-    tof  = z_score_normalize_saturate_outliers(tof, quantile_of_max=0.999)
+    swi  = z_score_normalize_saturate_outliers(swi)
+    tof  = z_score_normalize_saturate_outliers(tof)
 
     # swi[swi == swi_background_value] = 0
     # tof[tof == tof_background_value] = 0
