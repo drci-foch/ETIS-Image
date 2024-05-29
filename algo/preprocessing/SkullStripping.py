@@ -4,7 +4,6 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
-from sklearn import preprocessing
 
 def save_array_to_nifti1(array, original_img, destination_path, output_name):
     # Transform the array to a nifti image which requires the affine of the original image.
