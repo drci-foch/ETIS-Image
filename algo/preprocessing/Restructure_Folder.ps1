@@ -17,7 +17,7 @@ foreach ($targetDir in $dirMapping.Values) {
 }
 
 # Get the list of unique item directories
-$itemDirs = Get-ChildItem -Path $rootDir -Directory | Where-Object { $_.Name -ne "CLOT_SEG" -and $_.Name -ne "T2star_" -and $_.Name -ne "TOF3D" }
+$itemDirs = Get-ChildItem -Path $rootDir -Directory | Where-Object { $_.Name -ne "CLOT_SEG" -and $_.Name -ne "T2star_" -and $_.Name -ne "T2star_GRE" -and $_.Name -ne "TOF3D" }
 
 foreach ($itemDir in $itemDirs) {
     foreach ($sourceDirName in $dirMapping.Keys) {
