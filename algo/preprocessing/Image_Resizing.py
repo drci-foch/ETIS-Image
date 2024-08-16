@@ -9,7 +9,7 @@ def tuple_product(*args):
         product *= element
     return product
 
-def resize_images_to_reference (source_path, destination_path, ref_image_path=None, modification_string="", inclusion_string="", save_ref=False):
+def resize_images_to_reference (source_path, destination_path, ref_image_path=None, image_is_label=False, ref_spacing=None, interpolation_method="linear", modification_string="", inclusion_string="", save_ref=False):
     files = os.listdir(source_path)
 
     # Select files to process.
@@ -24,8 +24,11 @@ def resize_images_to_reference (source_path, destination_path, ref_image_path=No
     
     nifti_files_to_process = nifti_files.copy()
 
+    # No need to add a reference image if a spacing is given
+    if ref_spacing != None:
+        pass
     # If no reference image is used, dynamically choose a reference among selected files by choosing the biggest image.
-    if ref_image_path is None:
+    elif ref_image_path is None:
         index_of_max_product = max(range(len(nii_img_shapes)), key=lambda i: tuple_product(nii_img_shapes[i]))
         del nifti_files_to_process[index_of_max_product]
         
@@ -36,29 +39,68 @@ def resize_images_to_reference (source_path, destination_path, ref_image_path=No
         reference_filename = os.path.basename(ref_image_path)
         reference_image = tio.ScalarImage(ref_image_path)
     
-    # Define the reference image name, adding the modification string if necessary.
-    split_name = reference_filename.split("_")
-    if modification_string != "":
-        split_name.insert(-1, modification_string)
-    new_reference_img_name = "_".join(split_name)
+    if ref_spacing is None:
+        # Define the reference image name, adding the modification string if necessary.
+        split_name = reference_filename.split(".")
+        if modification_string != "":
+            split_name[0] = split_name[0] + "_" + modification_string
+        new_reference_img_name = ".".join(split_name)
+    
+        if save_ref:
+            reference_image.save(os.path.join(destination_path, new_reference_img_name))
 
-    if save_ref:
-        reference_image.save(os.path.join(destination_path, new_reference_img_name))
-
-    print("Processed reference image ", reference_filename)
+        print("Processed reference image ", reference_filename)
 
     # Use tio.Resample to resize all images to match the shape of the reference image.
     for file in nifti_files_to_process:
         file_path = os.path.join(source_path, file)
+
+        if image_is_label:
+            image_to_resize = tio.LabelMap(file_path)
+        else:
+            image_to_resize = tio.ScalarImage(file_path)
+        if ref_spacing is None:
+            normalized_image = tio.Resample(target=reference_image)(image_to_resize)
+        else:
+            normalized_image = tio.Resample(target=ref_spacing, image_interpolation=interpolation_method)(image_to_resize)
         
-        image_to_resize = tio.ScalarImage(file_path)
-        normalized_image = tio.Resample(target=reference_image)(image_to_resize)
-        
-        split_name = file.split("_")
+        split_name = file.split(".")
         if modification_string != "":
-            split_name.insert(-1, modification_string)
-        new_img_name = "_".join(split_name)
+            split_name[0] = split_name[0] + "_" + modification_string
+        new_img_name = ".".join(split_name)
 
         normalized_image.save(os.path.join(destination_path, new_img_name))
         
         print("Processed image ", file)
+
+def resize_images_to_moving_reference (source_path, target_path, ref_folder_path, image_is_label=False, interpolation_method="linear", modification_string="", inclusion_string=""):
+    # Resize a folder of images according to a reference of another folder of images. There must be a 1-to-1 correspondence between the resized and reference folder.
+
+    # Select files to process.
+    nifti_files_source = [file for file in os.listdir(source_path) if (file.endswith('.nii.gz')) & (inclusion_string in file)]
+    nifti_files_ref = [file for file in os.listdir(ref_folder_path) if (file.endswith('.nii.gz')) & (inclusion_string in file)]
+
+    if len(nifti_files_source) != len(nifti_files_ref):
+        raise SystemExit("Number of images to resize and their reference is different.")
+    
+    for source_file, ref_file in zip(nifti_files_source, nifti_files_ref):
+        source_split_name = source_file.split("_")
+        source_file_path = os.path.join(source_path, source_file)
+        ref_file_path = os.path.join(ref_folder_path, ref_file)
+
+        if image_is_label:
+            image_to_resize = tio.LabelMap(source_file_path)
+            ref_image = tio.ScalarImage(ref_file_path)
+            normalized_image = tio.Resample(target=ref_image)(image_to_resize)
+        else:
+            image_to_resize = tio.ScalarImage(source_file_path)
+            ref_image = tio.ScalarImage(ref_file_path)
+            normalized_image = tio.Resample(target=ref_image, image_interpolation=interpolation_method)(image_to_resize)
+
+        split_name = source_file.split(".")
+        if modification_string != "":
+            split_name[0] = split_name[0] + "_" + modification_string
+        
+        new_img_name = ".".join(split_name)
+        normalized_image.save(os.path.join(target_path, new_img_name))
+        print("Processed image ", source_file) 
