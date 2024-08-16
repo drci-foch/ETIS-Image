@@ -4,6 +4,12 @@ import nibabel as nib
 import numpy as np
 import scipy
 
+def save_array_to_nifti1(array, original_img, destination_path, output_name):
+    # Transform the array to a nifti image which requires the affine of the original image.
+    processed_img = nib.Nifti1Image(array, original_img.affine)
+    
+    nib.save(processed_img, os.path.join(destination_path, output_name))
+
 def apply_processing_to_img_folder (processing_function, source_path, destination_path, modification_string, inclusion_string="", **kwargs):
     files = os.listdir(source_path)
     
