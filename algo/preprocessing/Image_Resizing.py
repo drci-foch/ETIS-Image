@@ -1,5 +1,4 @@
 import nibabel as nib
-import numpy as np
 import torchio as tio
 import os
 
@@ -9,7 +8,7 @@ def tuple_product(*args):
         product *= element
     return product
 
-def resize_images_to_reference (source_path, destination_path, ref_image_path=None, image_is_label=False, ref_spacing=None, interpolation_method="linear", modification_string="", inclusion_string="", save_ref=False):
+def resize_images_to_reference (source_path, destination_path, ref_image_path=None, image_is_label=False, ref_spacing=None, transform_to_canonical=False, interpolation_method="linear", modification_string="", inclusion_string="", save_ref=False):
     files = os.listdir(source_path)
 
     # Select files to process.
@@ -59,8 +58,17 @@ def resize_images_to_reference (source_path, destination_path, ref_image_path=No
             image_to_resize = tio.LabelMap(file_path)
         else:
             image_to_resize = tio.ScalarImage(file_path)
-        if ref_spacing is None:
+       # 4 cases for the combinations of ref_spacing None/user-supplied and transform_to_canonical True/False.
+        if (ref_spacing is None) & (transform_to_canonical):
+            transforms = tio.ToCanonical(), tio.Resample(target=reference_image)
+            total_transform = tio.Compose(transforms)
+            normalized_image = total_transform(image_to_resize)
+        elif (ref_spacing is None) & (transform_to_canonical == False):
             normalized_image = tio.Resample(target=reference_image)(image_to_resize)
+        elif (ref_spacing is not None) & (transform_to_canonical):
+            transforms = tio.ToCanonical(), tio.Resample(target=ref_spacing, image_interpolation=interpolation_method)
+            total_transform = tio.Compose(transforms)
+            normalized_image = total_transform(image_to_resize)
         else:
             normalized_image = tio.Resample(target=ref_spacing, image_interpolation=interpolation_method)(image_to_resize)
         
@@ -73,7 +81,7 @@ def resize_images_to_reference (source_path, destination_path, ref_image_path=No
         
         print("Processed image ", file)
 
-def resize_images_to_moving_reference (source_path, target_path, ref_folder_path, image_is_label=False, interpolation_method="linear", modification_string="", inclusion_string=""):
+def resize_images_to_moving_reference (source_path, target_path, ref_folder_path, image_is_label=False, transform_to_canonical=False, interpolation_method="linear", modification_string="", inclusion_string=""):
     # Resize a folder of images according to a reference of another folder of images. There must be a 1-to-1 correspondence between the resized and reference folder.
 
     # Select files to process.
@@ -91,11 +99,21 @@ def resize_images_to_moving_reference (source_path, target_path, ref_folder_path
         if image_is_label:
             image_to_resize = tio.LabelMap(source_file_path)
             ref_image = tio.ScalarImage(ref_file_path)
-            normalized_image = tio.Resample(target=ref_image)(image_to_resize)
+            if transform_to_canonical:
+                transforms = tio.ToCanonical(), tio.Resample(target=ref_image)
+                total_transform = tio.Compose(transforms)
+                normalized_image = total_transform(image_to_resize)
+            else:
+                normalized_image = tio.Resample(target=ref_image)(image_to_resize)
         else:
             image_to_resize = tio.ScalarImage(source_file_path)
             ref_image = tio.ScalarImage(ref_file_path)
-            normalized_image = tio.Resample(target=ref_image, image_interpolation=interpolation_method)(image_to_resize)
+            if transform_to_canonical:
+                transforms = tio.ToCanonical(), tio.Resample(target=ref_image, image_interpolation=interpolation_method)
+                total_transform = tio.Compose(transforms)
+                normalized_image = total_transform(image_to_resize)
+            else:
+                normalized_image = tio.Resample(target=ref_image, image_interpolation=interpolation_method)(image_to_resize)
 
         split_name = source_file.split(".")
         if modification_string != "":
