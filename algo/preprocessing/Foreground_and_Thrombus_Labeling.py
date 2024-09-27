@@ -22,7 +22,7 @@ def apply_processing_to_img_folder (processing_function, source_path, destinatio
         nii_data = nii_img.get_fdata()
         new_img_name = os.path.splitext(os.path.splitext(file)[0])[0] + "_" + modification_string + ".nii.gz"
 
-        # Update kwargs dictionary to include file
+        # Update kwargs dictionary to include file and label_directory
         kwargs["sample_filename"] = file
         
         # Apply processing_function to the array, then save it as a nifti file.
@@ -36,7 +36,7 @@ def label_foreground_voxels (array, foreground_label=1.0, background_label=0.0, 
     # Otherwise, the value of the background must be supplied.
     if background_intensity == "mode":
         background_value = scipy.stats.mode(array, axis=None).mode
-    # Otherwise the backgrond value must be supplied
+    # Otherwise the background value must be supplied
     else:
         background_value = background_intensity
 
