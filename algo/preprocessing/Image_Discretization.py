@@ -5,7 +5,10 @@ import os
 
 def save_array_to_nifti1(array, original_img, destination_path, output_name):
     # Transform the array to a nifti image which requires the affine of the original image.
-    processed_img = nib.Nifti1Image(array, original_img.affine)
+    if isinstance(original_img, nib.Nifti1Image) :
+        processed_img = nib.Nifti1Image(array, nib.load(original_img).affine)
+    else:
+        processed_img = nib.Nifti1Image(array, nib.load(original_img_path).affine)
     
     nib.save(processed_img, os.path.join(destination_path, output_name))
 
