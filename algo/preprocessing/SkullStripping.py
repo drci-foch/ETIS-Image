@@ -1,11 +1,12 @@
 import os
 import subprocess
 
-def apply_batch_HDBET (source_dir, target_dir, string_to_replace=None, modification_string="", **kwargs):
+def apply_batch_HDBET (hd_bet_path, source_dir, target_dir, string_to_replace=None, modification_string="", **kwargs):
+    # Find hd_bet_path with pyenv which hd-bet
     source_string = os.path.normpath(source_dir)
     target_string = os.path.normpath(target_dir)
 
-    command = ["hd-bet", "-i", source_string, "-o", target_string]
+    command = [hd_bet_path, "-i", source_string, "-o", target_string]
     
     try:
         result = subprocess.run(command, capture_output=True, text=True)
