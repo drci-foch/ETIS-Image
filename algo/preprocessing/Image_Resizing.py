@@ -1,6 +1,8 @@
 import nibabel as nib
 import torchio as tio
+import numpy as np
 import ants
+from scipy.ndimage import binary_dilation
 import os
 
 def tuple_product(*args):
@@ -8,6 +10,31 @@ def tuple_product(*args):
     for element in args:
         product *= element
     return product
+
+def save_array_to_nifti1(array, original_img, destination_path, output_name):
+    # Transform the array to a nifti image which requires the affine of the original image.
+    if isinstance(original_img, nib.Nifti1Image) :
+        processed_img = nib.Nifti1Image(array, original_img.affine)
+    else:
+        processed_img = nib.Nifti1Image(array, nib.load(original_img).affine)
+    
+    nib.save(processed_img, os.path.join(destination_path, output_name))
+
+def apply_processing_to_img_folder (processing_function, source_path, destination_path, modification_string, inclusion_string="", **kwargs):
+    files = os.listdir(source_path)
+    
+    # Select files to process.
+    nifti_files = [file for file in files if (file.endswith('.nii.gz')) & (inclusion_string in file)]
+
+    for file in nifti_files:
+        file_path = os.path.join(source_path, file)
+        nii_img = nib.load(file_path)
+        nii_data = nii_img.get_fdata()
+        new_img_name = os.path.splitext(os.path.splitext(file)[0])[0] + "_" + modification_string + ".nii.gz"
+    
+        # Apply processing_function to the array, then save it as a nifti file.
+        save_array_to_nifti1(processing_function(nii_data, **kwargs), nii_img, destination_path, new_img_name)
+        print("Processed image ", file)
 
 def resize_images_to_reference (source_path, destination_path, ref_image_path=None, image_is_label=False, ref_spacing=None, transform_to_canonical=False, interpolation_method="linear", modification_string="", inclusion_string="", save_ref=False):
     files = os.listdir(source_path)
@@ -123,6 +150,29 @@ def resize_images_to_moving_reference (source_path, target_path, ref_folder_path
         normalized_image.save(os.path.join(target_path, new_img_name))
         print("Processed image ", source_file)
 
+def transform_images_to_canonical (source_path, target_path, image_is_label=False, modification_string="", inclusion_string=""):
+    # Transform a folder of images to canonical frame of reference as defined by torchio ToCanonical.
+
+    # Select files to process.
+    nifti_files_source = [file for file in os.listdir(source_path) if (file.endswith('.nii.gz')) & (inclusion_string in file)]
+    for source_file in nifti_files_source:
+        source_file_path = os.path.join(source_path, source_file)
+
+        if image_is_label:
+            image_to_resize = tio.LabelMap(source_file_path)
+            normalized_image = tio.ToCanonical()(image_to_resize)
+        else:
+            image_to_resize = tio.ScalarImage(source_file_path)
+            normalized_image = tio.ToCanonical()(image_to_resize)
+        
+        split_name = source_file.split(".")
+        if modification_string != "":
+            split_name[0] = split_name[0] + "_" + modification_string
+        
+        new_img_name = ".".join(split_name)
+        normalized_image.save(os.path.join(target_path, new_img_name))
+        print("Processed image ", source_file)
+
 def register_mask_to_moving_reference (mask_source_path, target_path, ref_folder_path, atlas_path, registration_type="AffineFast", interpolation_method="nearestNeighbor", modification_string="", inclusion_string=""):
     # Register a folder of images according to a reference of another folder of images. Then perform the registration on a list of masks to obtain the registered mask.
     # There must be a 1-to-1 correspondence between the registered and reference folder.
@@ -152,25 +202,20 @@ def register_mask_to_moving_reference (mask_source_path, target_path, ref_folder
         ants.image_write(transformed_mask, os.path.join(target_path, new_img_name))
         print("Processed image ", source_file)
 
-def transform_images_to_canonical (source_path, target_path, image_is_label=False, modification_string="", inclusion_string=""):
-    # Transform a folder of images to canonical frame of reference as defined by torchio ToCanonical.
+def renumber_mask (array):
+    return np.where(array > 0, 1, array)
 
-    # Select files to process.
-    nifti_files_source = [file for file in os.listdir(source_path) if (file.endswith('.nii.gz')) & (inclusion_string in file)]
-    for source_file in nifti_files_source:
-        source_file_path = os.path.join(source_path, source_file)
+def dilate_array (array, iterations, structure="Default_Kernel"):
+    kernel_size = 5
+    kernel_radius = (kernel_size - 1) / 2
 
-        if image_is_label:
-            image_to_resize = tio.LabelMap(source_file_path)
-            normalized_image = tio.ToCanonical()(image_to_resize)
-        else:
-            image_to_resize = tio.ScalarImage(source_file_path)
-            normalized_image = tio.ToCanonical()(image_to_resize)
-        
-        split_name = source_file.split(".")
-        if modification_string != "":
-            split_name[0] = split_name[0] + "_" + modification_string
-        
-        new_img_name = ".".join(split_name)
-        normalized_image.save(os.path.join(target_path, new_img_name))
-        print("Processed image ", source_file)
+    x, y, z = np.ogrid[-kernel_radius:kernel_radius+1, -kernel_radius:kernel_radius+1, -kernel_radius:kernel_radius+1]
+
+    kernel_distance = np.sqrt(x**2 + y**2 + z**2)
+
+    kernel = (kernel_distance <= kernel_radius).astype(np.float32)
+
+    if structure == "Default_Kernel":
+        return binary_dilation(array, iterations=iterations, structure=kernel).astype("float32")
+    else:
+        return binary_dilation(array, iterations=iterations, structure=structure).astype("float32")
