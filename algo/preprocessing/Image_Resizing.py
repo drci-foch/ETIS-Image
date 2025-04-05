@@ -150,7 +150,7 @@ def resize_images_to_moving_reference (source_path, target_path, ref_folder_path
         normalized_image.save(os.path.join(target_path, new_img_name))
         print("Processed image ", source_file)
 
-def transform_images_to_canonical (source_path, target_path, image_is_label=False, modification_string="", inclusion_string=""):
+def transform_images_to_canonical (source_path, target_path, image_is_label=False, modification_string="Canonical", inclusion_string=""):
     # Transform a folder of images to canonical frame of reference as defined by torchio ToCanonical.
 
     # Select files to process.
