@@ -89,7 +89,7 @@ def pad_collate_fn(batch):
     
     return padded_subjects
 
-def save_predictions (predictions_list, save_destination, filename_source_dir, output_suffix="_Prediction"):
+def save_predictions (predictions_list, save_destination, filename_source_dir, output_suffix="Prediction"):
     if not os.path.exists(save_destination):
         os.makedirs(save_destination)
         print(f"Folder created at {save_destination}")
@@ -99,7 +99,7 @@ def save_predictions (predictions_list, save_destination, filename_source_dir, o
             sys.exit(1)
             
     for mask, filename in zip(predictions_list, os.listdir(filename_source_dir)):
-        output_mask_name = "_".join(filename.split("_")[:2]) + output_suffix + ".nii.gz"
+        output_mask_name = "_".join(filename.split("_")[:2]) + "_" + output_suffix + ".nii.gz"
         save_array_to_nifti1(np.array(mask), os.path.join(filename_source_dir, filename), save_destination, output_mask_name)
 
 def compute_dice_metric (prediction_list, ground_truth_masks_list):
