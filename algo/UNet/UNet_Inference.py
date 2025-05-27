@@ -45,8 +45,11 @@ def restore_inference_original_size (prediction_list, original_img_dir):
         for prediction, original_file in zip(prediction_list, os.listdir(original_img_dir))
         ]
 
-def load_prediction_masks (mask_dir):
-    return [torch.tensor(nib.load(os.path.join(mask_dir, mask)).get_fdata()) for mask in os.listdir(mask_dir) if (mask.endswith(".nii.gz"))]
+def load_prediction_masks (mask_dir, return_format="torch_tensor"):
+    if return_format == "numpy_array":
+        return [nib.load(os.path.join(mask_dir, mask)).get_fdata() for mask in os.listdir(mask_dir) if (mask.endswith(".nii.gz"))]
+    else:
+        return [torch.tensor(nib.load(os.path.join(mask_dir, mask)).get_fdata()) for mask in os.listdir(mask_dir) if (mask.endswith(".nii.gz"))]
 
 def pad_collate_fn(batch):
     # Collate function to ensure batches have the same size, that is the size of the largest image in the batch.
