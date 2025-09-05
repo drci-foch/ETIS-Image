@@ -116,7 +116,10 @@ def compute_dice_metric (prediction_list, ground_truth_masks_list):
 
 def compute_sensitivity_metric (prediction_list, ground_truth_masks_list):
     intersection_list = np.array(
-        [((prediction * gt_mask).sum()/gt_mask.sum()) for prediction, gt_mask in zip(prediction_list, ground_truth_masks_list)]
+        [((prediction * gt_mask).sum()/gt_mask.sum()) if gt_mask.sum() != 0 
+         else torch.tensor(1.0, dtype=torch.float64) if prediction.sum() == 0
+         else torch.tensor(0.0, dtype=torch.float64)
+         for prediction, gt_mask in zip(prediction_list, ground_truth_masks_list)]
     ).flatten()
     print(f"Mean Sensitivity is {intersection_list.mean()}")
     return intersection_list
