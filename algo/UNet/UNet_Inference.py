@@ -106,7 +106,7 @@ def save_predictions (predictions_list, save_destination, filename_source_dir, o
         save_array_to_nifti1(np.array(mask), os.path.join(filename_source_dir, filename), save_destination, output_mask_name)
 
 def compute_dice_metric (prediction_list, ground_truth_masks_list):
-    dice_metric = monai.metrics.DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
+    dice_metric = monai.metrics.DiceMetric(include_background=True, reduction="mean", get_not_nans=False, ignore_empty=False)
     dice_score_list = np.array(
         [dice_metric(prediction.unsqueeze(0).unsqueeze(0), gt_mask.unsqueeze(0).unsqueeze(0))
          for prediction, gt_mask in zip(prediction_list, ground_truth_masks_list)]
